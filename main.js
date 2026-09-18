@@ -53,8 +53,7 @@ const pythonTeacher = new Agent({
   modelSettings: MODEL_SETTINGS,
   instructions:
     "你是 Python 老師，請用繁體中文回答 Python 相關問題。",
-  handoffDescription: "Python 語法、函式庫，或《為你自己學 Python》這本書的相關問題",
-  tools: [toAgentTool(pythonBookTool)],
+  handoffDescription: "Python 語法、函式庫，相關問題",
 });
 
 // 【🛠️ 修正重點 1】修正變數名稱為 normalTeacher，並對齊 AGENTS.md 的規矩與工具配置
@@ -65,7 +64,6 @@ const normalTeacher = new Agent({
   instructions:
     "你是 我很正常 老師，請用繁體中文回答吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題。",
   handoffDescription: "吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題",
-  tools: [], // 吃喝玩樂老師通常不需要查 Python 書籍，故清空工具或根據作業需求配置
 });
 
 const homeroom = Agent.create({
