@@ -30,8 +30,8 @@ async function calculate({ expression }) {
   }
 }
 
-export const calculatorTool = defineTool({
-  name: "calculator",
+export const calculateTool = defineTool({
+  name: "calculate",
   description: "數學計算機，可以計算加減乘除、百分比與括號運算。",
   fn: calculate,
   parameters: z.object({
