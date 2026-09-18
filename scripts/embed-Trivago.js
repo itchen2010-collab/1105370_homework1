@@ -11,17 +11,18 @@ import {
 const CSV_PATH = "data/trivago20260918.csv";
 const BATCH_SIZE = 100;
 
-// 【修正重點 1】調整為 Trivago 飯店資料的欄位組合，以利轉化為富含語意特徵的文字
+// 將真實 CSV 欄位轉化為富含語意的文字供 OpenAI 生成向量
 function rowToText(row) {
   return [
-    `飯店名稱: ${row.hotel_name}`,
-    `城市: ${row.city}`,
-    `星級: ${row.star_rating}`,
-    `評分: ${row.user_rating}`,
-    `位置資訊: ${row.distance_info}`,
-    `特色標籤: ${row.highlights}`
+    `飯店名稱: ${row.hotel_name || "未知"}`,
+    `城市: ${row.city || "未知"}`,
+    `國家: ${row.country || ""}`,
+    `星級: ${row.star_rating || "暫無"}星`,
+    `用戶評分: ${row.user_rating || "暫無"}分`,
+    `位置資訊: ${row.distance_info || ""}`,
+    `亮點特色: ${row.highlights || ""}`
   ]
-    .filter(Boolean)
+    .filter((text) => text && !text.includes("undefined"))
     .join(" | ");
 }
 
@@ -43,9 +44,22 @@ async function embedBatch(texts) {
   return res.data.map((d) => d.embedding);
 }
 
+// 安全轉換數字的輔助函式，避免產生 NaN 導致 Qdrant 報錯
+function safeParseInt(val) {
+  if (!val || val.trim() === "") return null;
+  const parsed = parseInt(val, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function safeParseFloat(val) {
+  if (!val || val.trim() === "") return null;
+  const parsed = parseFloat(val);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 async function main() {
   const csv = await readFile(CSV_PATH, "utf8");
-  // 使用 bom: true 避免 Windows 平台產生的 CSV 檔首帶有不可見字元
+  // columns: true 會自動將 CSV 的第一行當作物件的 key
   const rows = parse(csv, { columns: true, skip_empty_lines: true, bom: true });
   console.log(`讀到 ${rows.length} 筆資料`);
 
@@ -59,22 +73,29 @@ async function main() {
     const vectors = await embedBatch(texts);
 
     const points = batch.map((row, idx) => ({
-      // Qdrant 的整數 ID 需要大於 0。這裡使用 i + idx + 1
       id: i + idx + 1, 
       vector: vectors[idx],
+      // 這裡的 key 名稱全部完美對齊 CSV 標頭字串
       payload: {
-        hotel_id: row.hotel_id, // 【修正重點 2】順便把原始 hotel_id 存入方便未來比對
-        hotel_name: row.hotel_name,
-        star_rating: row.star_rating ? parseInt(row.star_rating, 10) : null,
-        review_count: row.review_count ? parseInt(row.review_count, 10) : null,
-        user_rating: row.user_rating ? parseFloat(row.user_rating) : null,
-        city: row.city,
-        highlights: row.highlights,
-        distance_info: row.distance_info,
-        forecasted_price_eurocents: row.forecasted_price_eurocents ? parseInt(row.forecasted_price_eurocents, 10) : null,
-        forecasted_price_amount: row.forecasted_price_amount ? parseInt(row.forecasted_price_amount, 10) : null,
-        longitude: row.longitude ? parseFloat(row.longitude) : null,
-        latitude: row.latitude ? parseFloat(row.latitude) : null,
+        advertiser_id: row.advertiser_id || null,
+        advertiser_name: row.advertiser_name || null,
+        city: row.city || null,
+        country: row.country || null,
+        hotel_id: row.hotel_id || null,
+        hotel_name: row.hotel_name || null,
+        highlights: row.highlights || null,
+        distance_info: row.distance_info || null,
+        arrival: row.arrival || null,
+        departure: row.departure || null,
+        // 使用安全防錯轉換，將空字串轉為 null，非空字串轉為正確的數字型態
+        star_rating: safeParseInt(row.star_rating),
+        review_count: safeParseInt(row.review_count),
+        user_rating: safeParseFloat(row.user_rating),
+        construction_year: safeParseInt(row.construction_year),
+        forecasted_price_amount: safeParseInt(row.forecasted_price_amount),
+        forecasted_price_eurocents: safeParseInt(row.forecasted_price_eurocents),
+        longitude: safeParseFloat(row.longitude),
+        latitude: safeParseFloat(row.latitude),
       },
     }));
 
@@ -83,7 +104,7 @@ async function main() {
     console.log(`進度：${processed} / ${rows.length}`);
   }
 
-  console.log("全部資料已成功灌入 Qdrant 資料庫！");
+  console.log("全部資料已成功且精準對齊地灌入 Qdrant 資料庫！");
 }
 
 main().catch((err) => {
