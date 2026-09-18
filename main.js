@@ -57,14 +57,15 @@ const pythonTeacher = new Agent({
   tools: [toAgentTool(pythonBookTool)],
 });
 
-const pythonTeacher = new Agent({
+// 【🛠️ 修正重點 1】修正變數名稱為 normalTeacher，並對齊 AGENTS.md 的規矩與工具配置
+const normalTeacher = new Agent({
   name: "我很正常 老師",
   model: MODEL,
   modelSettings: MODEL_SETTINGS,
   instructions:
-    "你是 我很正常 老師，請用繁體中文回答吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題",
-  handoffDescription: "Python 語法、函式庫，或《為你自己學 Python》這本書的相關問題",
-  tools: [toAgentTool(pythonBookTool)],
+    "你是 我很正常 老師，請用繁體中文回答吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題。",
+  handoffDescription: "吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題",
+  tools: [], // 吃喝玩樂老師通常不需要查 Python 書籍，故清空工具或根據作業需求配置
 });
 
 const homeroom = Agent.create({
@@ -81,7 +82,8 @@ const homeroom = Agent.create({
     toAgentTool(youbikeTool),
     toAgentTool(netflixTool),
   ],
-  handoffs: [phpTeacher, vueTeacher, pythonTeacher],
+  // 【🛠️ 修正重點 2】在 handoffs 內加入 normalTeacher，班導師才知道能轉交給他！
+  handoffs: [phpTeacher, vueTeacher, pythonTeacher, normalTeacher],
   mcpServers: [tenlongMcp],
 });
 
