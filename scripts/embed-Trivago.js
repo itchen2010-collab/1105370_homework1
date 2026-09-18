@@ -48,7 +48,8 @@ async function embedBatch(texts) {
 
 async function main() {
   const csv = await readFile(CSV_PATH, "utf8");
-  const rows = parse(csv, { columns: true, skip_empty_lines: true });
+  //const rows = parse(csv, { columns: true, skip_empty_lines: true });
+  const rows = parse(csv, { columns: true, skip_empty_lines: true, bom: true });
   console.log(`讀到 ${rows.length} 筆資料`);
 
   await recreateCollection();
@@ -64,17 +65,17 @@ async function main() {
       id: i + idx,
       vector: vectors[idx],
       payload: {
-        show_id: row.show_id,
-        title: row.title,
-        type: row.type,
-        director: row.director,
-        cast: row.cast,
-        country: row.country,
-        release_year: row.release_year,
-        rating: row.rating,
-        duration: row.duration,
-        listed_in: row.listed_in,
-        description: row.description,
+        hotel_name: row.hotel_name,
+        star_rating: row.star_rating,
+        review_count: row.review_count,
+        user_rating: row.user_rating,
+        city: row.city,
+        highlights: row.highlights,
+        distance_info: row.distance_info,
+        forecasted_price_eurocents: row.forecasted_price_eurocents,
+        forecasted_price_amount: row.forecasted_price_amount,
+        longitude: row.longitude,
+        latitude: row.latitude,
       },
     }));
 
