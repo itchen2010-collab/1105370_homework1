@@ -52,7 +52,17 @@ const pythonTeacher = new Agent({
   model: MODEL,
   modelSettings: MODEL_SETTINGS,
   instructions:
-    "你是 Python 老師，請用繁體中文回答 Python 相關問題。如果問題是關於《為你自己學 Python》這本書、或 Python 的入門背景（用途、特色、怎麼學），先用 search_learn_python 查書裡的內容再回答；其他 Python 問題用你自己的知識解釋即可。",
+    "你是 Python 老師，請用繁體中文回答 Python 相關問題。",
+  handoffDescription: "Python 語法、函式庫，或《為你自己學 Python》這本書的相關問題",
+  tools: [toAgentTool(pythonBookTool)],
+});
+
+const pythonTeacher = new Agent({
+  name: "我很正常 老師",
+  model: MODEL,
+  modelSettings: MODEL_SETTINGS,
+  instructions:
+    "你是 我很正常 老師，請用繁體中文回答吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題",
   handoffDescription: "Python 語法、函式庫，或《為你自己學 Python》這本書的相關問題",
   tools: [toAgentTool(pythonBookTool)],
 });

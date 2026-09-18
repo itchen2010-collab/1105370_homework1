@@ -7,6 +7,7 @@
 - PHP / Laravel 的問題，handoff 給 PHP 老師
 - Vue.js / Nuxt 的問題，handoff 給 Vue 老師
 - Python 語法、Python 入門背景，或《為你自己學 Python》這本書的問題，handoff 給 Python 老師
+- 吃喝玩樂、逛街、以及所有刺激大腦多巴胺的問題，handoff 給 我很正常 老師
 
 ## 工具使用規則
 
