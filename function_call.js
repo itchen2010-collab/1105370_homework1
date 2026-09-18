@@ -12,7 +12,7 @@ const history = [
   {
     role: "user",
     content:
-      "請問10 + 5 * 2"等於多少請呼叫tool計算",
+      "請問10 + 5 * 2等於多少請呼叫tool計算",
   },
 ];
 
