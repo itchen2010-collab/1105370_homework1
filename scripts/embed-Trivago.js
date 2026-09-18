@@ -3,7 +3,6 @@ import { parse } from "csv-parse/sync";
 import { client } from "../lib/openai.js";
 import {
   qdrant,
-  //NETFLIX_COLLECTION,
   Trivago_COLLECTION,
   EMBEDDING_DIM,
   EMBEDDING_MODEL,
@@ -12,26 +11,24 @@ import {
 const CSV_PATH = "data/trivago20260918.csv";
 const BATCH_SIZE = 100;
 
+// 【修正重點 1】調整為 Trivago 飯店資料的欄位組合，以利轉化為富含語意特徵的文字
 function rowToText(row) {
   return [
-    row.title,
-    row.type,
-    row.director,
-    row.cast,
-    row.country,
-    row.listed_in,
-    row.description,
+    `飯店名稱: ${row.hotel_name}`,
+    `城市: ${row.city}`,
+    `星級: ${row.star_rating}`,
+    `評分: ${row.user_rating}`,
+    `位置資訊: ${row.distance_info}`,
+    `特色標籤: ${row.highlights}`
   ]
     .filter(Boolean)
     .join(" | ");
 }
 
 async function recreateCollection() {
-  //const exists = await qdrant.collectionExists(NETFLIX_COLLECTION);
   const exists = await qdrant.collectionExists(Trivago_COLLECTION);
   if (exists.exists) {
-    //await qdrant.deleteCollection(NETFLIX_COLLECTION);
-	await qdrant.deleteCollection(Trivago_COLLECTION);
+    await qdrant.deleteCollection(Trivago_COLLECTION);
   }
   await qdrant.createCollection(Trivago_COLLECTION, {
     vectors: { size: EMBEDDING_DIM, distance: "Cosine" },
@@ -48,7 +45,7 @@ async function embedBatch(texts) {
 
 async function main() {
   const csv = await readFile(CSV_PATH, "utf8");
-  //const rows = parse(csv, { columns: true, skip_empty_lines: true });
+  // 使用 bom: true 避免 Windows 平台產生的 CSV 檔首帶有不可見字元
   const rows = parse(csv, { columns: true, skip_empty_lines: true, bom: true });
   console.log(`讀到 ${rows.length} 筆資料`);
 
@@ -62,20 +59,22 @@ async function main() {
     const vectors = await embedBatch(texts);
 
     const points = batch.map((row, idx) => ({
-      id: i + idx,
+      // Qdrant 的整數 ID 需要大於 0。這裡使用 i + idx + 1
+      id: i + idx + 1, 
       vector: vectors[idx],
       payload: {
+        hotel_id: row.hotel_id, // 【修正重點 2】順便把原始 hotel_id 存入方便未來比對
         hotel_name: row.hotel_name,
-        star_rating: row.star_rating,
-        review_count: row.review_count,
-        user_rating: row.user_rating,
+        star_rating: row.star_rating ? parseInt(row.star_rating, 10) : null,
+        review_count: row.review_count ? parseInt(row.review_count, 10) : null,
+        user_rating: row.user_rating ? parseFloat(row.user_rating) : null,
         city: row.city,
         highlights: row.highlights,
         distance_info: row.distance_info,
-        forecasted_price_eurocents: row.forecasted_price_eurocents,
-        forecasted_price_amount: row.forecasted_price_amount,
-        longitude: row.longitude,
-        latitude: row.latitude,
+        forecasted_price_eurocents: row.forecasted_price_eurocents ? parseInt(row.forecasted_price_eurocents, 10) : null,
+        forecasted_price_amount: row.forecasted_price_amount ? parseInt(row.forecasted_price_amount, 10) : null,
+        longitude: row.longitude ? parseFloat(row.longitude) : null,
+        latitude: row.latitude ? parseFloat(row.latitude) : null,
       },
     }));
 
@@ -84,10 +83,10 @@ async function main() {
     console.log(`進度：${processed} / ${rows.length}`);
   }
 
-  console.log("完成！");
+  console.log("全部資料已成功灌入 Qdrant 資料庫！");
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error("執行過程中發生錯誤:", err);
   process.exit(1);
 });
